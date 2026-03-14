@@ -1,0 +1,14 @@
+# Ignore virtual environment
+venv/
+env/
+.venv/
+
+# Ignore Python compiled files
+__pycache__/
+*.py[cod]
+
+# Ignore Flask/IDE specific files
+.env
+.flaskenv
+.vscode/
+.idea/
