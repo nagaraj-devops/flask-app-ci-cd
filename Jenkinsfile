@@ -32,31 +32,21 @@ pipeline {
             }
         }
         stage('Deploy') {
-            steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'deploy-ssh-key-nagaraj-aws', keyFileVariable: 'MY_KEY')]) {
-                    sh """
-                        chmod 400 ${MY_KEY}
-                        ssh -i ${MY_KEY} -o StrictHostKeyChecking=no ubuntu@15.207.11.6 << 'EOF'
-                            # 1. Login to ECR
-                            /snap/bin/aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 412275828685.dkr.ecr.ap-south-1.amazonaws.com
-                            
-                            # 2. Pull the specific version
-                            docker pull 412275828685.dkr.ecr.ap-south-1.amazonaws.com/flask-app-ci-cd:${env.BUILD_NUMBER}
-                            
-                            # 3. Clean up old containers (using || true so it doesn't fail if they don't exist)
-                            docker stop flask-app || true
-                            docker rm flask-app || true
-                            
-                            # 4. Run the new container
-                            docker run -d -p 5000:5000 --name flask-app 412275828685.dkr.ecr.ap-south-1.amazonaws.com/flask-app-ci-cd:${env.BUILD_NUMBER}
-                            
-                            # 5. Verification
-                            echo "Checking running containers:"
-                            docker ps | grep flask-app
-        EOF
-                    """
-                }
-            }
+    steps {
+        withCredentials([sshUserPrivateKey(credentialsId: 'deploy-ssh-key-nagaraj-aws', keyFileVariable: 'MY_KEY')]) {
+            sh """
+                chmod 400 ${MY_KEY}
+                ssh -i ${MY_KEY} -o StrictHostKeyChecking=no ubuntu@15.207.11.6 << 'EOF'
+/snap/bin/aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 412275828685.dkr.ecr.ap-south-1.amazonaws.com
+docker pull 412275828685.dkr.ecr.ap-south-1.amazonaws.com/flask-app-ci-cd:${env.BUILD_NUMBER}
+docker stop flask-app || true
+docker rm flask-app || true
+docker run -d -p 5000:5000 --name flask-app 412275828685.dkr.ecr.ap-south-1.amazonaws.com/flask-app-ci-cd:${env.BUILD_NUMBER}
+docker ps | grep flask-app
+EOF
+            """
         }
+    }
+}
     }
 }
