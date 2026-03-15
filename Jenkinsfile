@@ -15,15 +15,18 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 script {
-                    // This pulls the keys from the Jenkins Store safely
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'ecr-cross-account-creds']]) {
                         def awsCli = "/usr/local/bin/aws"
                         
-                        sh """
-                            # The AWS CLI will automatically pick up the credentials from the binding
-                            ${awsCli} ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-                            docker push ${ECR_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}
-                        """
+                        // 1. Login
+                        sh "${awsCli} ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
+                        
+                        // 2. Build or Tag the image specifically for ECR
+                        // Assuming your build stage created an image named 'flask-app-ci-cd'
+                        sh "docker tag flask-app-ci-cd:${BUILD_NUMBER} ${ECR_REGISTRY}/flask-app-ci-cd:${BUILD_NUMBER}"
+                        
+                        // 3. Push the fully qualified image
+                        sh "docker push ${ECR_REGISTRY}/flask-app-ci-cd:${BUILD_NUMBER}"
                     }
                 }
             }
