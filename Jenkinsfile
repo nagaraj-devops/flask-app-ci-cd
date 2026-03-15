@@ -34,13 +34,15 @@ pipeline {
         stage('Deploy') {
             steps {
                 sshagent(['deploy-ssh-key-nagaraj-aws']) {
+                    // Using -A enables agent forwarding, which allows the SSH 
+                    // session to use the keys loaded in the ssh-agent block
                     sh """
-                        ssh -o StrictHostKeyChecking=no ubuntu@${TARGET_IP} '
-                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-                            docker pull ${ECR_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}
+                        ssh -A -o StrictHostKeyChecking=no ubuntu@15.207.11.6 '
+                            /snap/bin/aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 412275828685.dkr.ecr.ap-south-1.amazonaws.com
+                            docker pull 412275828685.dkr.ecr.ap-south-1.amazonaws.com/flask-app-ci-cd:6
                             docker stop flask-app || true
                             docker rm flask-app || true
-                            docker run -d -p 5000:5000 --name flask-app ${ECR_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}
+                            docker run -d -p 5000:5000 --name flask-app 412275828685.dkr.ecr.ap-south-1.amazonaws.com/flask-app-ci-cd:6
                         '
                     """
                 }
