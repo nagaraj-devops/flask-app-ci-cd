@@ -33,19 +33,19 @@ pipeline {
         }
         stage('Deploy') {
             steps {
-                // This binds your private key to a temporary file path ($MY_KEY)
-                withCredentials([sshUserPrivateKey(credentialsId: 'deploy-ssh-key-nagaraj-aws', keyFileVariable: 'MY_KEY', usernameVariable: 'USER')]) {
-                    sh """
+                withCredentials([sshUserPrivateKey(credentialsId: 'deploy-ssh-key-nagaraj-aws', keyFileVariable: 'MY_KEY')]) {
+                    // Use single quotes for the 'sh' command to avoid Groovy interpolation warnings
+                    // Use \$MY_KEY to ensure the shell handles the variable, not Jenkins/Groovy
+                    sh '''
+                        chmod 400 $MY_KEY
                         ssh -i $MY_KEY -o StrictHostKeyChecking=no ubuntu@15.207.11.6 << 'EOF'
-                            # Use the explicit path found on target server
                             /snap/bin/aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 412275828685.dkr.ecr.ap-south-1.amazonaws.com
-                            
                             docker pull 412275828685.dkr.ecr.ap-south-1.amazonaws.com/flask-app-ci-cd:6
                             docker stop flask-app || true
                             docker rm flask-app || true
                             docker run -d -p 5000:5000 --name flask-app 412275828685.dkr.ecr.ap-south-1.amazonaws.com/flask-app-ci-cd:6
         EOF
-                    """
+                    '''
                 }
             }
         }
