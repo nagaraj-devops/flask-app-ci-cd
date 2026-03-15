@@ -15,10 +15,10 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 script {
-                    // Define the explicit path
-                    def awsCli = "/snap/bin/aws"
+                    // Define the confirmed path from 'which aws'
+                    def awsCli = "/usr/local/bin/aws"
                     
-                    // Perform the login, tag, and push
+                    // Perform login, tag, and push
                     sh """
                         ${awsCli} ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
                         docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${ECR_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}
