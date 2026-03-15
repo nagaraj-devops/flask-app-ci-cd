@@ -15,15 +15,14 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 script {
-                    // Define the confirmed path from 'which aws'
-                    def awsCli = "/usr/local/bin/aws"
-                    
-                    // Perform login, tag, and push
-                    sh """
-                        ${awsCli} ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-                        docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${ECR_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}
-                        docker push ${ECR_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}
-                    """
+                    // Explicitly point the AWS CLI to the credentials file
+                    withEnv(['AWS_SHARED_CREDENTIALS_FILE=/home/ubuntu/.aws/credentials', 'AWS_CONFIG_FILE=/home/ubuntu/.aws/config']) {
+                        def awsCli = "/usr/local/bin/aws"
+                        sh """
+                            ${awsCli} ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                            docker push ${ECR_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}
+                        """
+                    }
                 }
             }
         }
