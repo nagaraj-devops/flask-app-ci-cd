@@ -15,10 +15,12 @@ pipeline {
         stage('Push to ECR') {
             steps {
                 script {
-                    // Explicitly point the AWS CLI to the credentials file
-                    withEnv(['AWS_SHARED_CREDENTIALS_FILE=/home/ubuntu/.aws/credentials', 'AWS_CONFIG_FILE=/home/ubuntu/.aws/config']) {
+                    // This pulls the keys from the Jenkins Store safely
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'ecr-cross-account-creds']]) {
                         def awsCli = "/usr/local/bin/aws"
+                        
                         sh """
+                            # The AWS CLI will automatically pick up the credentials from the binding
                             ${awsCli} ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
                             docker push ${ECR_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}
                         """
