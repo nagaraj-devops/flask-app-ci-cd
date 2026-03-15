@@ -34,25 +34,27 @@ pipeline {
         stage('Deploy') {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: 'deploy-ssh-key-nagaraj-aws', keyFileVariable: 'MY_KEY')]) {
-                    sh '''
-                        chmod 400 $MY_KEY
-                        ssh -i $MY_KEY -o StrictHostKeyChecking=no ubuntu@15.207.11.6 << 'REMOTESCRIPT'
-                            # Login to ECR
+                    sh """
+                        chmod 400 ${MY_KEY}
+                        ssh -i ${MY_KEY} -o StrictHostKeyChecking=no ubuntu@15.207.11.6 << 'EOF'
+                            # 1. Login to ECR
                             /snap/bin/aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 412275828685.dkr.ecr.ap-south-1.amazonaws.com
                             
-                            # Pull and Cycle Container
-                            docker pull 412275828685.dkr.ecr.ap-south-1.amazonaws.com/flask-app-ci-cd:${BUILD_NUMBER}
+                            # 2. Pull the specific version
+                            docker pull 412275828685.dkr.ecr.ap-south-1.amazonaws.com/flask-app-ci-cd:${env.BUILD_NUMBER}
+                            
+                            # 3. Clean up old containers (using || true so it doesn't fail if they don't exist)
                             docker stop flask-app || true
                             docker rm flask-app || true
                             
-                            # Start App
-                            docker run -d -p 5000:5000 --name flask-app 412275828685.dkr.ecr.ap-south-1.amazonaws.com/flask-app-ci-cd:${BUILD_NUMBER}
+                            # 4. Run the new container
+                            docker run -d -p 5000:5000 --name flask-app 412275828685.dkr.ecr.ap-south-1.amazonaws.com/flask-app-ci-cd:${env.BUILD_NUMBER}
                             
-                            # Verify
+                            # 5. Verification
                             echo "Checking running containers:"
                             docker ps | grep flask-app
-        REMOTESCRIPT
-                    '''
+        EOF
+                    """
                 }
             }
         }
